@@ -3,18 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Liquid Glass — Demo</title>
+<title>Liquid Glass — Minimal Demo</title>
+
+<!-- 1. the package stylesheet (tint, bevel, shine, tint variants) -->
+<link rel="stylesheet" href="./src/liquid-glass.css" />
+
 <style>
-  :root {
-    /* tweak these to taste */
-    --glass-blur: 8px;
-    --glass-saturate: 180%;
-    --glass-radius: 28px;
-    --glass-tint: rgba(255, 255, 255, 0.12);
-  }
-
+  /* Page styling only — none of this is required by the package. */
   * { box-sizing: border-box; }
-
   body {
     margin: 0;
     min-height: 100vh;
@@ -36,67 +32,21 @@
     background-attachment: fixed;
   }
 
-  /* ============================================================
-     THE GLASS
-     ============================================================ */
-  .glass {
-    position: relative;
-    padding: 1.4rem 2rem;
-    border-radius: var(--glass-radius);
-    isolation: isolate;             /* keep highlight pseudo-elements contained */
-    overflow: hidden;
-
-    /* Layer 3 — translucent tint */
-    background: var(--glass-tint);
-
-    /* Layers 1 + 2 — blur + saturation/brightness behind the pane.
-       url(#refraction) = Layer 5, the SVG lensing filter defined below. */
-    backdrop-filter: url(#refraction) blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-
-    /* Layer 4 — specular highlights.
-       - inset top-left light + bottom-right shadow = the wet 3D rim
-       - outer shadow = the pane floating above the page */
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.45),
-      inset 0 -1px 1px rgba(255, 255, 255, 0.10),
-      inset 0 0 18px rgba(255, 255, 255, 0.06),
-      0 8px 32px rgba(0, 0, 0, 0.35);
-
-    border: 1px solid rgba(255, 255, 255, 0.18);
-  }
-
-  /* A subtle moving highlight gradient across the top edge — the "liquid" shine */
-  .glass::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.35) 0%,
-      rgba(255, 255, 255, 0.05) 30%,
-      transparent 50%
-    );
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  /* ---- demo content styling ---- */
-  .pill { display: flex; gap: 0.5rem; align-items: center; }
+  /* demo content styling */
+  .pill { display: flex; gap: 0.5rem; align-items: center; padding: 0.5rem 0.6rem; }
   .pill button {
     all: unset; cursor: pointer; padding: 0.6rem 1.1rem; border-radius: 999px;
     font-weight: 600; font-size: 0.95rem;
   }
-  .pill button:hover { background: rgba(255,255,255,0.12); }
-  h1 { font-size: 1.4rem; margin: 0 0 0.3rem; }
-  p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
-  .card { max-width: 360px; }
+  .pill button:hover { background: rgba(255, 255, 255, 0.14); }
+  .card { max-width: 360px; padding: 1.6rem 1.9rem; }
+  h1 { font-size: 1.4rem; margin: 0 0 0.4rem; }
+  p  { margin: 0; opacity: 0.9; font-size: 0.95rem; line-height: 1.55; }
 </style>
 </head>
 <body>
 
-  <!-- A pill nav, like a control bar -->
+  <!-- 2. markup: add the `glass` class to anything you want to be glass -->
   <nav class="glass pill">
     <button>Home</button>
     <button>Explore</button>
@@ -104,28 +54,17 @@
     <button>Settings</button>
   </nav>
 
-  <!-- A card -->
   <div class="glass card">
     <h1>Liquid Glass</h1>
-    <p>Scroll the colorful background under this pane to watch it blur, saturate,
-       and refract at the rounded edges. Resize the window too.</p>
+    <p>The colorful background blurs, saturates, and bends at the rounded edges —
+       with a faint chromatic fringe on the rim. Resize the window too.</p>
   </div>
 
-  <!-- ============================================================
-       Layer 5 — REFRACTION via SVG displacement.
-       feTurbulence makes a noise map; feDisplacementMap uses it to
-       push pixels of the backdrop sideways, faking how a lens bends
-       light. Lower scale = subtle, higher = wobbly water.
-       ============================================================ -->
-  <svg style="position:absolute; width:0; height:0">
-    <filter id="refraction" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012"
-                    numOctaves="2" seed="42" result="noise" />
-      <feGaussianBlur in="noise" stdDeviation="2" result="softNoise" />
-      <feDisplacementMap in="SourceGraphic" in2="softNoise"
-                         scale="18" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-  </svg>
+  <!-- 3. the engine: one import, one call -->
+  <script type="module">
+    import { createLiquidGlass } from "./src/liquid-glass.js";
+    createLiquidGlass(".glass");
+  </script>
 
 </body>
 </html>
