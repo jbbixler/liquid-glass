@@ -94,7 +94,13 @@ import { useEffect, useRef } from "react";
 
 export function Glass({ className = "", options, children, ...rest }) {
   const ref = useRef(null);
+  // keep latest options without re-running the mount effect
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   useEffect(() => {
+    // mount once: do NOT depend on `options` (an inline object is a new
+    // reference every render and would rebuild the glass each time).
     let handle;
     let cancelled = false;
     (async () => {
@@ -102,10 +108,10 @@ export function Glass({ className = "", options, children, ...rest }) {
         "https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.js"
       );
       if (cancelled || !ref.current) return;
-      handle = createLiquidGlass(ref.current, options);
+      handle = createLiquidGlass(ref.current, optionsRef.current);
     })();
     return () => { cancelled = true; handle?.destroy(); };
-  }, [options]);
+  }, []);
 
   return (
     <div ref={ref} className={`glass ${className}`} {...rest}>
@@ -118,8 +124,11 @@ export function Glass({ className = "", options, children, ...rest }) {
 Usage: `<Glass style={{ padding: 24, borderRadius: 24 }}>Hi</Glass>`.
 Load CSS once via your global CSS: `@import "https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.css";`
 
-Note: if the glass element animates size or the route changes, call
-`handle.rebuild()` after the layout settles.
+Notes:
+- The effect runs **once on mount** by design. To change options at runtime,
+  hold the handle in a ref and call `handle.update(newOptions)`.
+- If the glass element animates size or the route changes, call
+  `handle.rebuild()` after the layout settles.
 
 ---
 
