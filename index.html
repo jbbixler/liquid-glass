@@ -143,12 +143,88 @@
     .layer:nth-child(even) .layer-demo { order: 0; }
     .quick { grid-template-columns: 1fr; }
   }
+
+  /* ---------------- MOBILE GATE ----------------
+     The refraction effect depends on backdrop-filter: url(#svg), which only
+     the Chromium engine renders. Every browser on iOS is WebKit, so there is
+     no way to show the real thing on a phone. Rather than ship a degraded
+     layout, mobile gets a purpose-built page: desktop screenshots + a plain
+     explanation. Desktop is completely unaffected. */
+  .mobile-gate { display: none; }
+
+  @media (max-width: 760px) {
+    .desktop-only { display: none !important; }
+    .mobile-gate {
+      display: block; position: relative; z-index: 1;
+      min-height: 100vh; padding: 40px 20px 56px;
+      max-width: 540px; margin: 0 auto;
+    }
+    .mg-eyebrow { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+      font-weight: 700; opacity: 0.7; margin: 4px 0 14px; }
+    .mg-title { font-size: clamp(40px, 16vw, 68px); font-weight: 800; letter-spacing: -0.03em;
+      line-height: 0.92; margin: 0 0 18px; text-shadow: 0 4px 30px rgba(0,0,0,0.35); }
+    .mg-lead { font-size: 17px; line-height: 1.55; opacity: 0.95; margin: 0 0 24px; }
+    .mg-card { padding: 22px 22px; margin: 0 0 22px; }
+    .mg-card h2 { font-size: 18px; margin: 0 0 10px; }
+    .mg-card p { font-size: 14.5px; line-height: 1.6; opacity: 0.92; margin: 0 0 10px; }
+    .mg-card p:last-child { margin-bottom: 0; }
+    .mg-shot { width: 100%; display: block; border-radius: 16px; margin: 0 0 14px;
+      border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 8px 30px rgba(0,0,0,0.32); }
+    .mg-cap { font-size: 12.5px; opacity: 0.62; margin: 0 0 26px; text-align: center; }
+    .mg-actions { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 28px; }
+    .mg-btn { display: block; text-align: center; text-decoration: none; color: #fff;
+      padding: 15px 20px; border-radius: 16px; font-weight: 600; font-size: 15px; }
+    .mg-foot { text-align: center; font-size: 13px; opacity: 0.7; line-height: 1.7; }
+    .mg-foot a { color: #9ad0ff; text-decoration: none; }
+  }
 </style>
 </head>
 <body>
   <div class="backdrop"></div>
   <div class="grain"></div>
 
+  <!-- ============================ MOBILE GATE ============================
+       Shown only under 760px. The refraction effect cannot run on iOS, so the
+       phone gets desktop screenshots and a plain note instead of a broken UI. -->
+  <main class="mobile-gate">
+    <p class="mg-eyebrow">Best on desktop</p>
+    <h1 class="mg-title">Liquid Glass</h1>
+    <p class="mg-lead">A buildless, zero-dependency engine that gives the web
+      Apple-style refractive glass: edges that bend the background, a faint
+      color fringe, frost, and a living rim.</p>
+
+    <div class="mg-card glass glass--frost">
+      <h2>This one is a desktop thing</h2>
+      <p>The refraction is powered by an SVG filter inside
+        <code>backdrop-filter</code>, and only Chromium browsers (Chrome, Edge,
+        Brave) actually render it. Every browser on iPhone and iPad runs on
+        Apple&rsquo;s WebKit engine, which does not, so there is no way to show
+        the real effect on a phone yet.</p>
+      <p>It is not broken and it is not your browser. The web platform simply
+        cannot do this on iOS today. So instead of a half-working page, here is
+        what it looks like on a computer.</p>
+    </div>
+
+    <img class="mg-shot" src="./assets/desktop-lines.jpg" width="1000" loading="lazy"
+      alt="Liquid Glass panels refracting horizontal lines on desktop, with a visible color fringe at the edges." />
+    <p class="mg-cap">Panels bending the background at the rim, with chromatic aberration.</p>
+
+    <img class="mg-shot" src="./assets/desktop-showcase.jpg" width="1000" loading="lazy"
+      alt="Liquid Glass showcase over a photo, with a live control panel for tuning the effect." />
+    <p class="mg-cap">The interactive playground, with live controls and presets.</p>
+
+    <div class="mg-actions">
+      <a class="mg-btn glass" href="https://github.com/jbbixler/liquid-glass">View the code on GitHub</a>
+      <a class="mg-btn glass glass--clear" href="./liquid-glass-showcase.html">Open the playground anyway</a>
+    </div>
+
+    <p class="mg-foot">Open <strong>tools.jbradbixler.com/liquid-glass</strong> on a
+      desktop browser for the full thing.<br />
+      Made by <a href="https://jbradbixler.com">JBB</a> &middot; jbradbixler.com</p>
+  </main>
+
+  <!-- ============================ DESKTOP ============================ -->
+  <div class="desktop-only">
   <!-- ============================ HERO ============================ -->
   <header class="hero">
     <span class="eyebrow">Buildless · Zero-dependency · ~6 KB</span>
@@ -366,6 +442,7 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
       </div>
     </div>
   </footer>
+  </div><!-- /.desktop-only -->
 
   <svg id="glass-filters" style="position:absolute; width:0; height:0" aria-hidden="true"></svg>
 
