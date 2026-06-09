@@ -369,20 +369,7 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
   <script type="module">
     import { createLiquidGlass, PRESETS } from "./src/liquid-glass.js";
 
-    // Apply the engine to every glass surface except the deliberately
-    // tint-only swatch (which demonstrates Layer 1 in isolation).
-    const targets = [...document.querySelectorAll(".glass")].filter(el => !el.classList.contains("tint-only"));
-    const glass = createLiquidGlass(targets);
-
-    // cursor-following specular highlight (Layer 4)
-    document.addEventListener("mousemove", (ev) => {
-      const g = ev.target.closest && ev.target.closest(".glass"); if (!g) return;
-      const r = g.getBoundingClientRect();
-      g.style.setProperty("--mx", (ev.clientX - r.left) + "px");
-      g.style.setProperty("--my", (ev.clientY - r.top) + "px");
-    });
-
-    // ---- presets gallery ----
+    // ---- build the presets gallery first, so its cards are glass too ----
     const gallery = document.getElementById("gallery");
     const cards = [];
     for (const [name, cfg] of Object.entries(PRESETS)) {
@@ -391,18 +378,32 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
       card.innerHTML = `<h3>${name}</h3>` +
         `<pre>${JSON.stringify(cfg, null, 2)}</pre>` +
         `<div class="applied">Applied ✓ — affecting every pane</div>`;
+      cards.push(card);
+      gallery.appendChild(card);
+    }
+
+    // Apply the engine to every glass surface (gallery cards included) except
+    // the deliberately tint-only swatch (which demonstrates Layer 1 alone).
+    const targets = [...document.querySelectorAll(".glass")].filter(el => !el.classList.contains("tint-only"));
+    const glass = createLiquidGlass(targets);
+
+    // clicking a card applies its preset live to every pane on the page
+    cards.forEach((card, i) => {
+      const cfg = Object.values(PRESETS)[i];
       card.addEventListener("click", () => {
         glass.update(cfg);
-        glass.rebuild();
         cards.forEach(c => c.classList.remove("is-applied"));
         card.classList.add("is-applied");
       });
-      gallery.appendChild(card);
-      cards.push(card);
-      // the engine just rebuilt to include this new card; ensure it's wired
-      glass.elements.push(card);
-    }
-    glass.rebuild();
+    });
+
+    // cursor-following specular highlight (Layer 4)
+    document.addEventListener("mousemove", (ev) => {
+      const g = ev.target.closest && ev.target.closest(".glass"); if (!g) return;
+      const r = g.getBoundingClientRect();
+      g.style.setProperty("--mx", (ev.clientX - r.left) + "px");
+      g.style.setProperty("--my", (ev.clientY - r.top) + "px");
+    });
 
     // ---- copy buttons ----
     const QUICK = `<link rel="stylesheet" href="src/liquid-glass.css">\n` +
