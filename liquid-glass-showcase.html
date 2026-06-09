@@ -30,10 +30,15 @@
   .dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
     display: flex; gap: 14px; padding: 11px 16px; border-radius: 24px; }
   .dock .icon { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center;
-    font-size: 22px; background: rgba(255,255,255,0.10); transition: transform 0.18s ease; cursor: pointer; }
+    background: rgba(255,255,255,0.10); transition: transform 0.18s ease; cursor: pointer; }
+  .dock .icon svg { width: 22px; height: 22px; stroke: #fff; stroke-width: 1.8; fill: none;
+    stroke-linecap: round; stroke-linejoin: round; opacity: 0.92; }
   .dock .icon:hover { transform: translateY(-8px) scale(1.12); }
+  .search svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.75); stroke-width: 1.8;
+    fill: none; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-  .lens { position: fixed; top: 130px; left: 40px; z-index: 90; width: 250px; height: 160px;
+  /* start centered; width/2 = 125px, height/2 = 80px (no transform so drag math stays direct) */
+  .lens { position: fixed; top: calc(50% - 80px); left: calc(50% - 125px); z-index: 90; width: 250px; height: 160px;
     cursor: grab; display: grid; place-items: center; text-align: center; padding: 16px; user-select: none; }
   .lens:active { cursor: grabbing; }
   .lens .big { font-size: 20px; font-weight: 700; display:block; margin-bottom: 6px; }
@@ -114,14 +119,17 @@
 
   <div class="lens glass glass--clear glass--alive" id="lens" data-blur="1.5" data-alive="1">
     <div class="hint">
-      <span class="big">🔍 Drag me</span>
+      <span class="big">Drag me</span>
       Drag over the horizontal lines &amp;<br>stripes to watch them refract.
     </div>
   </div>
 
   <div class="dock glass glass--alive" data-alive="1">
-    <div class="icon">🏠</div><div class="icon">🎨</div><div class="icon">📷</div>
-    <div class="icon">⚙️</div><div class="icon">💬</div>
+    <div class="icon" title="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+    <div class="icon" title="Color"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.6-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1 .9-1.8 1.9-1.8H17a4 4 0 004-4c0-4.4-4-7.7-9-7.7z"/><circle cx="7.5" cy="11" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="11" r="1"/></svg></div>
+    <div class="icon" title="Photo"><svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 012-2h2l1.5-2h7L18 6h1a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg></div>
+    <div class="icon" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.8 7.8 0 000-2l2-1.5-2-3.4-2.3 1a7.6 7.6 0 00-1.7-1l-.3-2.6h-4l-.3 2.6a7.6 7.6 0 00-1.7 1l-2.3-1-2 3.4L4.6 11a7.8 7.8 0 000 2l-2 1.5 2 3.4 2.3-1a7.6 7.6 0 001.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 001.7-1l2.3 1 2-3.4z"/></svg></div>
+    <div class="icon" title="Messages"><svg viewBox="0 0 24 24"><path d="M21 12a7 7 0 01-7 7H8l-4 3v-4.5A7 7 0 014 12a7 7 0 017-7h3a7 7 0 017 7z"/></svg></div>
   </div>
 
   <section class="sec-photo" id="photo">
@@ -133,7 +141,7 @@
         <p>Even over a smooth photo the rim now shows a faint color fringe — the
            chromatic-aberration tell. Hover to move the shine.</p>
       </div>
-      <div class="search glass"><span>🔎</span><input placeholder="Search anything…" /></div>
+      <div class="search glass"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input placeholder="Search anything…" /></div>
     </div>
   </section>
 
@@ -187,7 +195,7 @@
 
   <!-- live control panel (itself made of glass) -->
   <div class="controls glass glass--frost" id="controls">
-    <div class="ctitle" id="ctitle"><span>⚙︎ Glass controls</span><span class="chev">▾</span></div>
+    <div class="ctitle" id="ctitle"><span>Glass controls</span><span class="chev">▾</span></div>
     <div class="cbody" id="cbody">
       <div class="row"><label>Strength <span id="strength-val"></span></label><input type="range" id="strength" min="0" max="60" step="1"></div>
       <div class="row"><label>Edge tightness <span id="tightness-val"></span></label><input type="range" id="tightness" min="0.3" max="2" step="0.05"></div>

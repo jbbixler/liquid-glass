@@ -56,6 +56,8 @@
     text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
   .btn:hover { background: rgba(255,255,255,0.16); }
   .btn--solid { background: rgba(255,255,255,0.16); }
+  .btn svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none;
+    stroke-linecap: round; stroke-linejoin: round; flex: none; }
   .scroll-hint { position: absolute; bottom: 28px; font-size: 13px; opacity: 0.6; letter-spacing: 0.1em;
     animation: bob 2s ease-in-out infinite; }
   @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
@@ -236,8 +238,8 @@
          displacement map. No canvas overlay, no WebGL, no build step.</p>
     </div>
     <div class="cta">
-      <a class="btn btn--solid glass" href="./liquid-glass-showcase.html">🛝 Open the playground</a>
-      <button class="btn glass" id="copyQuick">⧉ Copy quickstart</button>
+      <a class="btn btn--solid glass" href="./liquid-glass-showcase.html"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Open the playground</a>
+      <button class="btn glass" id="copyQuick"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg> Copy quickstart</button>
     </div>
     <div class="scroll-hint">scroll to see how it works ↓</div>
   </header>
@@ -345,7 +347,7 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
           </div>
           <div class="layer-demo">
             <div class="demo-bg">
-              <div class="swatch glass" data-layer="refract">full effect ✨</div>
+              <div class="swatch glass" data-layer="refract">full effect</div>
             </div>
           </div>
         </div>
@@ -364,7 +366,7 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
 
       <div class="quick">
         <div class="codecard glass">
-          <h3>⬇️ Copy-paste (local files)</h3>
+          <h3>Copy-paste (local files)</h3>
           <pre><button class="copybtn" data-copy="local">copy</button><span class="com">&lt;!-- 1. styles --&gt;</span>
 &lt;<span class="kbd">link</span> rel=<span class="str">"stylesheet"</span> href=<span class="str">"src/liquid-glass.css"</span>&gt;
 
@@ -379,7 +381,7 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
         </div>
 
         <div class="codecard glass">
-          <h3>🌐 From the CDN (jsDelivr)</h3>
+          <h3>From the CDN (jsDelivr)</h3>
           <pre><button class="copybtn" data-copy="cdn">copy</button>&lt;<span class="kbd">link</span> rel=<span class="str">"stylesheet"</span> href=
   <span class="str">"https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.css"</span>&gt;
 
@@ -505,8 +507,13 @@ createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done<
       catch { btn.textContent = "copy failed"; }
       setTimeout(() => (btn.textContent = label), 1300);
     }
-    document.getElementById("copyQuick").addEventListener("click", (e) =>
-      copy(QUICK, e.currentTarget, "⧉ Copy quickstart"));
+    const copyQuickIcon = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg> Copy quickstart';
+    document.getElementById("copyQuick").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      try { await navigator.clipboard.writeText(QUICK); btn.textContent = "copied ✓"; }
+      catch { btn.textContent = "copy failed"; }
+      setTimeout(() => { btn.innerHTML = copyQuickIcon; }, 1300);
+    });
     document.querySelectorAll(".copybtn").forEach(btn =>
       btn.addEventListener("click", () => copy(btn.dataset.copy === "cdn" ? CDN : QUICK, btn)));
   </script>
