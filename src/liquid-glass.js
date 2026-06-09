@@ -38,6 +38,29 @@ export const PRESETS = {
   "JB's Pick":        { scale: 40, band: 0.95, blur: 4.5, sat: 1.80, aberration: 0.21, lens: 1 },
 };
 
+/**
+ * Feature-detect support for an SVG `url(#…)` reference inside `backdrop-filter`.
+ * This is the engine's signature effect, but it is **Chromium-only**: every
+ * browser on iOS (Safari and, because Apple mandates WebKit, Chrome/Firefox on
+ * iPhone/iPad too) ignores it. Firefox on desktop also lacks it. When it is
+ * unsupported we fall back to a plain blur+saturate frost instead of leaving a
+ * broken/empty filter that would blank the panel out. Result is memoized.
+ * @returns {boolean}
+ */
+let _refractionSupport;
+function supportsRefraction() {
+  if (_refractionSupport !== undefined) return _refractionSupport;
+  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
+    return (_refractionSupport = false);
+  }
+  // A bare data-URI keeps this self-contained (no dependency on a live filter).
+  const ref = 'url("data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\'></svg>#x")';
+  _refractionSupport =
+    CSS.supports("backdrop-filter", ref) ||
+    CSS.supports("-webkit-backdrop-filter", ref);
+  return _refractionSupport;
+}
+
 /* ---- rounded-rect signed distance field ---- */
 function sdRoundRect(px, py, w, h, r) {
   const dx = Math.abs(px - w / 2) - (w / 2) + r;
@@ -100,6 +123,19 @@ export function createLiquidGlass(target, options = {}) {
   let resizeTimer;
 
   function buildFilter(el) {
+    // Browsers without SVG-in-backdrop-filter support (all of iOS/WebKit and
+    // Firefox) cannot do the refraction. Apply a plain blur+saturate frost so
+    // the panel still looks like glass instead of going blank, and skip the
+    // costly displacement-map generation entirely.
+    if (!supportsRefraction()) {
+      if (el._lgRefs) { el._lgRefs.filter.remove(); el._lgRefs = null; }
+      const fallback = `blur(${config.blur + 5}px) saturate(${config.sat})`;
+      el.style.backdropFilter = fallback;
+      el.style.webkitBackdropFilter = fallback;
+      el.style.willChange = "";
+      return;
+    }
+
     const r = el.getBoundingClientRect();
     const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
     let radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 20;
@@ -179,8 +215,11 @@ export function createLiquidGlass(target, options = {}) {
   function update(partial) {
     const next = sanitize(partial);
     if (!Object.keys(next).length) return;
-    const cheapOnly = Object.keys(next).every(k => k !== "band" && k !== "lens");
     Object.assign(config, next);
+    // In frosted-fallback mode there are no live SVG nodes to patch; just
+    // re-apply the blur+saturate from the new config.
+    if (!supportsRefraction()) { buildAll(); return; }
+    const cheapOnly = Object.keys(next).every(k => k !== "band" && k !== "lens");
     if (cheapOnly) {
       if ("scale" in next || "aberration" in next) updateScale();
       if ("blur" in next) updateBlur();
@@ -202,6 +241,7 @@ export function createLiquidGlass(target, options = {}) {
     elements.forEach(el => {
       if (el._lgRefs) { el._lgRefs.filter.remove(); el._lgRefs = null; }
       el.style.backdropFilter = "";
+      el.style.webkitBackdropFilter = "";
       el.style.willChange = "";
     });
   }
