@@ -1,0 +1,52 @@
+{
+  "name": "liquid-glass",
+  "version": "0.1.0",
+  "description": "Dependency-free, buildless engine for Apple-style liquid-glass surfaces: edge refraction, chromatic aberration, frost, and a specular rim — driven by a per-element SVG displacement map.",
+  "type": "module",
+  "main": "src/liquid-glass.js",
+  "module": "src/liquid-glass.js",
+  "style": "src/liquid-glass.css",
+  "exports": {
+    ".": {
+      "import": "./src/liquid-glass.js",
+      "default": "./src/liquid-glass.js"
+    },
+    "./css": "./src/liquid-glass.css",
+    "./style.css": "./src/liquid-glass.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "src/liquid-glass.js",
+    "src/liquid-glass.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "check": "node --check src/liquid-glass.js"
+  },
+  "keywords": [
+    "liquid-glass",
+    "glassmorphism",
+    "backdrop-filter",
+    "refraction",
+    "chromatic-aberration",
+    "svg-filter",
+    "displacement-map",
+    "frosted-glass",
+    "ui",
+    "css"
+  ],
+  "homepage": "https://github.com/jbbixler/liquid-glass#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jbbixler/liquid-glass.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jbbixler/liquid-glass/issues"
+  },
+  "author": "Jared Bixler",
+  "license": "MIT"
+}

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Glass — Showcase</title>
+<link rel="stylesheet" href="./src/liquid-glass.css" />
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    color: #fff; -webkit-font-smoothing: antialiased;
+  }
+
+  /* The .glass base, shine, cursor highlight, and tint variants live in
+     src/liquid-glass.css. Only showcase-specific layout follows. */
+
+  /* ============================================================ FLOATING UI */
+  .navbar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 100;
+    display: flex; gap: 4px; align-items: center; padding: 7px; border-radius: 999px;
+  }
+  .navbar a { text-decoration: none; color: #fff; font-weight: 600; font-size: 14px;
+    padding: 9px 16px; border-radius: 999px; transition: background 0.2s; }
+  .navbar a:hover { background: rgba(255,255,255,0.14); }
+  .navbar a.active { background: rgba(255,255,255,0.20); }
+
+  .dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+    display: flex; gap: 14px; padding: 11px 16px; border-radius: 24px; }
+  .dock .icon { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center;
+    font-size: 22px; background: rgba(255,255,255,0.10); transition: transform 0.18s ease; cursor: pointer; }
+  .dock .icon:hover { transform: translateY(-8px) scale(1.12); }
+
+  .lens { position: fixed; top: 130px; left: 40px; z-index: 90; width: 250px; height: 160px;
+    cursor: grab; display: grid; place-items: center; text-align: center; padding: 16px; user-select: none; }
+  .lens:active { cursor: grabbing; }
+  .lens .big { font-size: 20px; font-weight: 700; display:block; margin-bottom: 6px; }
+  .lens .hint { font-size: 13px; font-weight: 600; opacity: 0.92; line-height: 1.5; }
+
+  /* ============================================================ SECTIONS */
+  section { min-height: 100vh; padding: 90px 6vw; display: flex; flex-direction: column;
+    justify-content: center; position: relative; }
+  .label { position: absolute; top: 28px; left: 6vw; font-size: 12px; letter-spacing: 0.15em;
+    text-transform: uppercase; opacity: 0.6; font-weight: 700; }
+  .sec-photo  { background: url("https://picsum.photos/id/1018/1600/1200") center/cover fixed; }
+  .sec-mesh { background:
+      radial-gradient(circle at 15% 20%, #ff6b9d 0, transparent 38%),
+      radial-gradient(circle at 85% 25%, #4facfe 0, transparent 42%),
+      radial-gradient(circle at 25% 85%, #43e97b 0, transparent 42%),
+      radial-gradient(circle at 80% 80%, #fee140 0, transparent 40%), #16162a; }
+  .sec-text   { background: #0e0e1a; overflow: hidden; }
+  .textwall { position: absolute; inset: 0; font-size: 13px; line-height: 1.6;
+    color: rgba(255,255,255,0.5); padding: 24px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    word-break: break-all; overflow: hidden; }
+  .sec-blocks { background: repeating-linear-gradient(45deg,
+      #ff0066 0 60px, #00d4ff 60px 120px, #ffd000 120px 180px, #00ff88 180px 240px); }
+  .sec-lines { background: repeating-linear-gradient(0deg,
+      #ffffff 0 6px, #101018 6px 22px); }     /* horizontal lines — Apple's classic test */
+  .sec-photo2 { background: url("https://picsum.photos/id/1062/1600/1200") center/cover fixed; }
+
+  .grid { display: flex; flex-wrap: wrap; gap: 22px; max-width: 780px; }
+  .card { padding: 26px 28px; max-width: 340px; }
+  .card h2 { margin: 0 0 10px; font-size: 22px; }
+  .card p { margin: 0; font-size: 15px; line-height: 1.55; opacity: 0.92; }
+  .btnrow { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .gbtn { padding: 13px 22px; font-weight: 600; font-size: 15px; color: #fff; cursor: pointer; border-radius: 16px; }
+  .gbtn:hover { background: rgba(255,255,255,0.14); }
+  .search { display: flex; align-items: center; gap: 10px; padding: 14px 20px; max-width: 420px; width: 100%; border-radius: 18px; }
+  .search input { all: unset; flex: 1; color: #fff; font-size: 16px; }
+  .search input::placeholder { color: rgba(255,255,255,0.6); }
+  .big-heading { font-size: clamp(40px, 9vw, 110px); font-weight: 800; letter-spacing: -0.03em;
+    margin: 0; line-height: 0.95; text-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+
+  /* ============================================================ CONTROL PANEL */
+  .controls {
+    position: fixed; top: 16px; right: 16px; z-index: 200; width: 250px;
+    padding: 14px 16px; border-radius: 18px; font-size: 12px;
+  }
+  .controls .ctitle { font-weight: 700; font-size: 13px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; }
+  .controls .chev { transition: transform 0.2s; }
+  .controls.collapsed .cbody { display: none; }
+  .controls.collapsed .chev { transform: rotate(-90deg); }
+  .controls .row { margin: 11px 0; }
+  .controls label { display: flex; justify-content: space-between; gap: 8px; align-items: center;
+    font-weight: 600; opacity: 0.92; margin-bottom: 5px; }
+  .controls input[type=range] { width: 100%; accent-color: #7db4ff; cursor: pointer; }
+  .controls .toggle label { justify-content: flex-start; gap: 8px; cursor: pointer; margin: 0; }
+  .controls span[id$="-val"] { opacity: 0.65; font-weight: 500; }
+  .controls .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 13px 0 8px; }
+  .controls .preset, .controls .cbtn { all: unset; cursor: pointer; padding: 7px 11px; border-radius: 10px;
+    background: rgba(255,255,255,0.14); font-weight: 600; font-size: 12px; text-align: center; }
+  .controls .cbtn { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; }
+  .controls .preset:hover, .controls .cbtn:hover { background: rgba(255,255,255,0.26); }
+  .controls .importbox[hidden] { display: none; }
+  .controls textarea { width: 100%; box-sizing: border-box; resize: vertical; margin-top: 6px;
+    background: rgba(0,0,0,0.28); color: #fff; border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px; padding: 8px; font: 11px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+  .controls .importmsg { opacity: 0.72; font-weight: 600; min-height: 14px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+  <nav class="navbar glass glass--alive" data-alive="1">
+    <a href="#photo" class="active">Photo</a>
+    <a href="#mesh">Color</a>
+    <a href="#lines">Lines</a>
+    <a href="#text">Text</a>
+    <a href="#blocks">Stripes</a>
+    <a href="#photo2">Portrait</a>
+  </nav>
+
+  <div class="lens glass glass--clear glass--alive" id="lens" data-blur="1.5" data-alive="1">
+    <div class="hint">
+      <span class="big">🔍 Drag me</span>
+      Drag over the horizontal lines &amp;<br>stripes to watch them refract.
+    </div>
+  </div>
+
+  <div class="dock glass glass--alive" data-alive="1">
+    <div class="icon">🏠</div><div class="icon">🎨</div><div class="icon">📷</div>
+    <div class="icon">⚙️</div><div class="icon">💬</div>
+  </div>
+
+  <section class="sec-photo" id="photo">
+    <span class="label">01 · Over photography</span>
+    <h1 class="big-heading">Liquid<br>Glass</h1>
+    <div class="grid" style="margin-top:30px">
+      <div class="card glass glass--alive" data-alive="1">
+        <h2>Refraction + aberration</h2>
+        <p>Even over a smooth photo the rim now shows a faint color fringe — the
+           chromatic-aberration tell. Hover to move the shine.</p>
+      </div>
+      <div class="search glass"><span>🔎</span><input placeholder="Search anything…" /></div>
+    </div>
+  </section>
+
+  <section class="sec-mesh" id="mesh">
+    <span class="label">02 · Over vivid color</span>
+    <div class="grid">
+      <div class="card glass glass--clear" data-blur="1"><h2>Clear</h2><p>Almost no tint — only the edges bend and fringe.</p></div>
+      <div class="card glass glass--frost" data-blur="7"><h2>Frost</h2><p>Heavier blur for legibility.</p></div>
+      <div class="card glass glass--tinted glass--alive" data-alive="1"><h2>Tinted + alive</h2><p>Colored tint with the ambient wobble running.</p></div>
+      <div class="card glass glass--dark"><h2>Dark</h2><p>Dark tint for light backgrounds.</p></div>
+    </div>
+    <div class="btnrow" style="margin-top:24px">
+      <div class="gbtn glass">Primary</div>
+      <div class="gbtn glass glass--dark">Secondary</div>
+      <div class="gbtn glass glass--clear">Ghost</div>
+    </div>
+  </section>
+
+  <section class="sec-lines" id="lines">
+    <span class="label">03 · Over horizontal lines — the Apple test</span>
+    <div class="grid">
+      <div class="card glass glass--alive" data-alive="1" data-scale="26"><h2>Watch the lines</h2><p>Horizontal rules bend and breathe under the rim exactly like Apple's demos. The wobble keeps it alive.</p></div>
+      <div class="gbtn glass" style="align-self:center" data-scale="26">Hover &amp; look</div>
+    </div>
+  </section>
+
+  <section class="sec-text" id="text">
+    <span class="label">04 · Over fine text</span>
+    <div class="textwall" id="textwall"></div>
+    <div class="grid">
+      <div class="card glass"><h2>Legibility test</h2><p>Fine text behind glass — the hardest contrast case. Edge refraction warps the lines under the rim while the center stays crisp.</p></div>
+      <div class="card glass glass--frost" data-blur="7"><h2>Frost wins</h2><p>For text-over-text UI, heavier frost is safer and more accessible.</p></div>
+    </div>
+  </section>
+
+  <section class="sec-blocks" id="blocks">
+    <span class="label">05 · Over sharp stripes</span>
+    <div class="grid">
+      <div class="card glass" data-scale="28"><h2>Maximum refraction</h2><p>Hard diagonal edges, high displacement scale, and color fringing all at once.</p></div>
+      <div class="gbtn glass" style="align-self:center" data-scale="28">Look at my edges</div>
+    </div>
+  </section>
+
+  <section class="sec-photo2" id="photo2">
+    <span class="label">06 · Over photography II</span>
+    <div class="grid">
+      <div class="card glass glass--alive" data-alive="1"><h2>Floating panel</h2><p>Shadow + bevel + refraction + a slow sheen traveling across the surface.</p></div>
+      <div class="card glass glass--clear" data-blur="1"><h2>Barely there</h2><p>The lightest touch is often the most convincing.</p></div>
+    </div>
+  </section>
+
+  <!-- live control panel (itself made of glass) -->
+  <div class="controls glass glass--frost" id="controls">
+    <div class="ctitle" id="ctitle"><span>⚙︎ Glass controls</span><span class="chev">▾</span></div>
+    <div class="cbody" id="cbody">
+      <div class="row"><label>Strength <span id="strength-val"></span></label><input type="range" id="strength" min="0" max="60" step="1"></div>
+      <div class="row"><label>Edge tightness <span id="tightness-val"></span></label><input type="range" id="tightness" min="0.3" max="2" step="0.05"></div>
+      <div class="row"><label>Blur <span id="blur-val"></span></label><input type="range" id="blur" min="0" max="14" step="0.5"></div>
+      <div class="row"><label>Saturation <span id="sat-val"></span></label><input type="range" id="sat" min="100" max="250" step="5"></div>
+      <div class="row"><label>Aberration <span id="ab-val"></span></label><input type="range" id="ab" min="0" max="40" step="1"></div>
+      <div class="row toggle"><label><input type="checkbox" id="invert"> Invert edge direction</label></div>
+      <div class="presets" id="presets"></div>
+      <button id="copy" class="cbtn">Copy settings JSON</button>
+      <button id="importToggle" class="cbtn">Paste settings JSON…</button>
+      <div class="importbox" id="importbox" hidden>
+        <textarea id="importjson" rows="6" spellcheck="false"
+          placeholder='{ "scale": 40, "band": 0.95, "blur": 4.5, "sat": 1.8, "aberration": 0.21, "lens": 1 }'></textarea>
+        <button id="apply" class="cbtn">Apply</button>
+        <button id="savePreset" class="cbtn">Apply &amp; save as preset</button>
+        <div class="importmsg" id="importmsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="glass-filters" style="position:absolute; width:0; height:0" aria-hidden="true"></svg>
+
+  <script type="module">
+  import { createLiquidGlass, PRESETS as BASE_PRESETS, CONFIG_KEYS } from "./src/liquid-glass.js";
+
+  /* The engine (SDF map, chromatic filter chain, live updates, resize rebuild)
+     now lives in src/liquid-glass.js. Here we just wire it to the controls. */
+  const glass = createLiquidGlass(".glass");
+  const CONFIG = glass.config;          // live config object the engine mutates
+  const PRESETS = { ...BASE_PRESETS };  // local copy so saved presets stay session-only
+
+  const $ = id => document.getElementById(id);
+
+  /* Cheap live tuning — the engine decides map-regen vs. attribute rewrite. */
+  function set(partial) { glass.update(partial); }
+
+  /* Validate + apply an arbitrary settings object (from a preset or pasted JSON).
+     Only finite numbers on known keys are accepted; unknown keys are ignored. */
+  function applyConfig(obj) {
+    if (!obj || typeof obj !== "object") throw new Error("not an object");
+    const next = {};
+    for (const k of CONFIG_KEYS) {
+      if (typeof obj[k] === "number" && Number.isFinite(obj[k])) next[k] = obj[k];
+    }
+    if (!Object.keys(next).length) throw new Error("no valid settings keys");
+    glass.update(next);
+    glass.rebuild();
+    syncUI();
+  }
+
+  function syncUI() {
+    $("strength").value = CONFIG.scale;  $("strength-val").textContent = CONFIG.scale + "px";
+    $("tightness").value = CONFIG.band;  $("tightness-val").textContent = (+CONFIG.band).toFixed(2);
+    $("blur").value = CONFIG.blur;       $("blur-val").textContent = CONFIG.blur + "px";
+    $("sat").value = Math.round(CONFIG.sat * 100);  $("sat-val").textContent = Math.round(CONFIG.sat * 100) + "%";
+    $("ab").value = Math.round(CONFIG.aberration * 100); $("ab-val").textContent = (+CONFIG.aberration).toFixed(2);
+    $("invert").checked = CONFIG.lens === -1;
+  }
+
+  $("strength").addEventListener("input", e => { $("strength-val").textContent = +e.target.value + "px"; set({ scale: +e.target.value }); });
+  $("tightness").addEventListener("input", e => { $("tightness-val").textContent = (+e.target.value).toFixed(2); set({ band: +e.target.value }); });
+  $("blur").addEventListener("input", e => { $("blur-val").textContent = +e.target.value + "px"; set({ blur: +e.target.value }); });
+  $("sat").addEventListener("input", e => { $("sat-val").textContent = e.target.value + "%"; set({ sat: +e.target.value / 100 }); });
+  $("ab").addEventListener("input", e => { $("ab-val").textContent = (+e.target.value / 100).toFixed(2); set({ aberration: +e.target.value / 100 }); });
+  $("invert").addEventListener("change", e => { set({ lens: e.target.checked ? -1 : 1 }); });
+
+  const presetsEl = $("presets");
+  function addPresetButton(name) {
+    const b = document.createElement("button"); b.className = "preset"; b.textContent = name;
+    b.onclick = () => applyConfig(PRESETS[name]);
+    presetsEl.appendChild(b);
+  }
+  Object.keys(PRESETS).forEach(addPresetButton);
+
+  /* ---- import: paste a settings JSON, apply it, optionally save as a preset ---- */
+  let msgTimer;
+  function importMsg(text) {
+    $("importmsg").textContent = text;
+    clearTimeout(msgTimer); msgTimer = setTimeout(() => $("importmsg").textContent = "", 1800);
+  }
+  function parseImport() {
+    return JSON.parse($("importjson").value);
+  }
+  $("importToggle").addEventListener("click", () => {
+    const box = $("importbox"); box.hidden = !box.hidden;
+    if (!box.hidden) $("importjson").focus();
+  });
+  $("apply").addEventListener("click", () => {
+    try { applyConfig(parseImport()); importMsg("Applied ✓"); }
+    catch (e) { importMsg("Invalid JSON or settings"); }
+  });
+  $("savePreset").addEventListener("click", () => {
+    let obj; try { obj = parseImport(); applyConfig(obj); }
+    catch (e) { return importMsg("Invalid JSON or settings"); }
+    const name = (prompt("Preset name?", "My preset") || "").trim();
+    if (!name) return;
+    const fresh = !(name in PRESETS);
+    PRESETS[name] = { ...CONFIG };
+    if (fresh) addPresetButton(name);
+    importMsg("Saved “" + name + "”");
+  });
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(JSON.stringify(CONFIG, null, 2)); $("copy").textContent = "Copied ✓"; }
+    catch (e) { $("copy").textContent = "Copy failed"; }
+    setTimeout(() => $("copy").textContent = "Copy settings JSON", 1300);
+  });
+  $("ctitle").addEventListener("click", () => { const c = $("controls"); c.classList.toggle("collapsed"); requestAnimationFrame(() => glass.rebuild()); });
+
+  syncUI();
+
+  /* ---- cursor-following highlight ---- */
+  document.addEventListener("mousemove", (ev) => {
+    const g = ev.target.closest && ev.target.closest(".glass"); if (!g) return;
+    const r = g.getBoundingClientRect();
+    g.style.setProperty("--mx", (ev.clientX - r.left) + "px");
+    g.style.setProperty("--my", (ev.clientY - r.top) + "px");
+  });
+
+  /* ---- draggable lens ---- */
+  const lens = document.getElementById("lens");
+  let dragging = false, offX = 0, offY = 0;
+  const pt = e => e.touches ? e.touches[0] : e;
+  lens.addEventListener("mousedown", e => { dragging = true; const r = lens.getBoundingClientRect(); offX = pt(e).clientX - r.left; offY = pt(e).clientY - r.top; });
+  lens.addEventListener("touchstart", e => { dragging = true; const r = lens.getBoundingClientRect(); offX = pt(e).clientX - r.left; offY = pt(e).clientY - r.top; }, { passive: true });
+  function move(e) { if (!dragging) return; lens.style.left = (pt(e).clientX - offX) + "px"; lens.style.top = (pt(e).clientY - offY) + "px"; if (e.cancelable) e.preventDefault(); }
+  addEventListener("mousemove", move); addEventListener("touchmove", move, { passive: false });
+  addEventListener("mouseup", () => dragging = false); addEventListener("touchend", () => dragging = false);
+
+  /* ---- scenery ---- */
+  const words = `liquid glass refraction backdrop blur saturate specular highlight translucent pane
+    lens bend light edge rim shine frost tint adaptive depth shadow inset border gradient
+    displacement normal distance field channel chromatic aberration chrome`.trim().split(/\s+/);
+  let wall = ""; for (let i = 0; i < 700; i++) wall += words[i % words.length] + " ";
+  document.getElementById("textwall").textContent = wall;
+
+  const links = [...document.querySelectorAll(".navbar a")];
+  const secs = links.map(a => document.querySelector(a.getAttribute("href")));
+  secs.forEach(s => new IntersectionObserver(es => es.forEach(en => {
+    if (en.isIntersecting) { links.forEach(l => l.classList.remove("active")); links[secs.indexOf(en.target)]?.classList.add("active"); }
+  }), { threshold: 0.5 }).observe(s));
+  </script>
+</body>
+</html>

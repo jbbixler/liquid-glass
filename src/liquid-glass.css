@@ -1,0 +1,56 @@
+/* ============================================================
+   Liquid Glass — base styles
+   Pairs with liquid-glass.js. The JS assigns `backdrop-filter: url(#…)`
+   per element (chromatic displace -> blur -> saturate); this stylesheet
+   supplies the tint, bevel, shine, cursor highlight, and tint variants.
+
+   Theme via custom properties:
+     --glass-radius   corner radius          (default 26px)
+     --glass-tint     translucent fill       (default rgba(255,255,255,.06))
+     --glass-border   rim color              (default rgba(255,255,255,.20))
+   ============================================================ */
+
+.glass {
+  --glass-radius: 26px;
+  --glass-tint: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.20);
+
+  position: relative;
+  border-radius: var(--glass-radius);
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-border);
+  /* Safari/Firefox fallback — no url() filter support for backdrop-filter */
+  -webkit-backdrop-filter: blur(6px) saturate(170%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),   /* top bevel light */
+    inset 0 -1px 1px rgba(255, 255, 255, 0.18),  /* bottom bevel */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),   /* faint full rim */
+    inset 0 0 14px rgba(255, 255, 255, 0.04),
+    0 6px 24px rgba(0, 0, 0, 0.22);              /* float shadow */
+  isolation: isolate;
+}
+
+/* static diagonal shine */
+.glass::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(133deg,
+    rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.06) 22%, transparent 42%);
+  pointer-events: none; z-index: 1;
+}
+
+/* cursor-following specular highlight (set --mx/--my from JS to activate) */
+.glass::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(130px circle at var(--mx, -200px) var(--my, -200px),
+    rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 40%, transparent 65%);
+  pointer-events: none; z-index: 1; opacity: 0;
+  transition: opacity 0.3s ease; mix-blend-mode: screen;
+}
+.glass:hover::after { opacity: 1; }
+.glass > * { position: relative; z-index: 2; }
+
+/* tint variants */
+.glass--clear  { --glass-tint: rgba(255, 255, 255, 0.03); }
+.glass--dark   { --glass-tint: rgba(0, 0, 0, 0.22); --glass-border: rgba(255, 255, 255, 0.12); }
+.glass--frost  { --glass-tint: rgba(255, 255, 255, 0.12); }
+.glass--tinted { --glass-tint: rgba(120, 170, 255, 0.14); }

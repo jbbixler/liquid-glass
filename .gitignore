@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Vercel
+.vercel
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Editor / tooling cruft
+.idea/
+.vscode/
+*.swp
+*~
+
+# Agent scratch
+.ezcoder/
