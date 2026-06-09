@@ -1,7 +1,7 @@
 # Liquid Glass
 
-Apple-style **refractive glass for the web** — edge bending, chromatic
-aberration, frost, saturation, and a living specular rim — driven by a
+Apple-style **refractive glass for the web**: edge bending, chromatic
+aberration, frost, saturation, and a living specular rim, driven by a
 per-element **SVG displacement map** over a real `backdrop-filter`.
 
 No canvas overlay. No WebGL. **No build step.** One ESM import + one stylesheet.
@@ -13,6 +13,7 @@ createLiquidGlass(".glass"); // that's it
 
 - **Live demo / how-it-works:** [`index.html`](./index.html)
 - **Interactive playground:** [`liquid-glass-showcase.html`](./liquid-glass-showcase.html)
+- **Drop it into any site (all frameworks):** [`INTEGRATION.md`](./INTEGRATION.md)
 
 ---
 
