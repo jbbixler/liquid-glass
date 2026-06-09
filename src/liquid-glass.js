@@ -39,25 +39,40 @@ export const PRESETS = {
 };
 
 /**
- * Feature-detect support for an SVG `url(#…)` reference inside `backdrop-filter`.
- * This is the engine's signature effect, but it is **Chromium-only**: every
- * browser on iOS (Safari and, because Apple mandates WebKit, Chrome/Firefox on
- * iPhone/iPad too) ignores it. Firefox on desktop also lacks it. When it is
- * unsupported we fall back to a plain blur+saturate frost instead of leaving a
- * broken/empty filter that would blank the panel out. Result is memoized.
+ * Detect whether the browser can actually *render* an SVG `url(#…)` filter
+ * inside `backdrop-filter` — the engine's signature refraction effect.
+ *
+ * This deliberately is NOT a `CSS.supports()` check: `url()` is valid *grammar*
+ * for `backdrop-filter` in every engine (`<filter-value-list> = [ <filter-
+ * function> | <url> ]+`), so `CSS.supports` returns `true` even on Safari and
+ * Firefox, which parse the value and then ignore it at paint time. Only the
+ * Blink/Chromium engine renders it. So we gate by engine: Chromium on a
+ * non-iOS platform. Everything else (all iOS browsers — Apple forces WebKit —
+ * desktop Safari, Firefox, or anything unrecognized) falls back to a plain
+ * blur+saturate frost. Erring toward the frost is the safe direction: the only
+ * downside is a clean fallback, whereas a wrong "supported" blanks the panel.
+ * Result is memoized.
  * @returns {boolean}
  */
 let _refractionSupport;
 function supportsRefraction() {
   if (_refractionSupport !== undefined) return _refractionSupport;
-  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
+  if (typeof navigator === "undefined" || typeof CSS === "undefined" ||
+      typeof CSS.supports !== "function") {
     return (_refractionSupport = false);
   }
-  // A bare data-URI keeps this self-contained (no dependency on a live filter).
-  const ref = 'url("data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\'></svg>#x")';
-  _refractionSupport =
-    CSS.supports("backdrop-filter", ref) ||
-    CSS.supports("-webkit-backdrop-filter", ref);
+  const hasBackdrop =
+    CSS.supports("backdrop-filter", "blur(1px)") ||
+    CSS.supports("-webkit-backdrop-filter", "blur(1px)");
+  const ua = navigator.userAgent || "";
+  // Blink-family UAs all carry "Chrome/" or "Chromium/" (Edge, Opera, Brave,
+  // Samsung, Arc included). iOS wrappers use CriOS/EdgiOS/etc. and are WebKit.
+  const isChromium = /Chrome\/|Chromium\//.test(ua) &&
+    !/CriOS|EdgiOS|FxiOS|OPiOS/.test(ua);
+  // iPadOS 13+ reports as "Macintosh"; touch points disambiguate it.
+  const isiOS = /iP(hone|ad|od)/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  _refractionSupport = hasBackdrop && isChromium && !isiOS;
   return _refractionSupport;
 }
 
