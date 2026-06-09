@@ -13,7 +13,6 @@ createLiquidGlass(".glass"); // that's it
 
 - **Live demo / how-it-works:** [`index.html`](./index.html)
 - **Interactive playground:** [`liquid-glass-showcase.html`](./liquid-glass-showcase.html)
-- **Minimal example:** [`liquid-glass-demo.html`](./liquid-glass-demo.html)
 
 ---
 
