@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Liquid Glass — mobile refraction prototype</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: #fff; -webkit-font-smoothing: antialiased;
+    /* a busy, scrollable page so refraction has real content to bend */
+    background:
+      radial-gradient(circle at 15% 12%, #ff6b9d 0, transparent 34%),
+      radial-gradient(circle at 85% 18%, #4facfe 0, transparent 38%),
+      radial-gradient(circle at 25% 60%, #43e97b 0, transparent 36%),
+      radial-gradient(circle at 80% 72%, #fee140 0, transparent 34%),
+      radial-gradient(circle at 50% 95%, #b06bff 0, transparent 40%),
+      #14142a;
+  }
+
+  .page { max-width: 720px; margin: 0 auto; padding: 28px 20px 160px; }
+  h1 { font-size: 30px; letter-spacing: -0.02em; margin: 6px 0 16px; }
+  .stripes { height: 120px; border-radius: 16px; margin: 18px 0;
+    background: repeating-linear-gradient(0deg, #fff 0 6px, #11111d 6px 22px); }
+  .stripes--diag { background: repeating-linear-gradient(45deg,
+      #ff0066 0 26px, #00d4ff 26px 52px, #ffd000 52px 78px, #00ff88 78px 104px); }
+  p { line-height: 1.6; opacity: 0.94; font-size: 15px; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    opacity: 0.6; word-break: break-all; }
+
+  /* ---- the glass card ---- */
+  .card {
+    position: relative; border-radius: 26px; isolation: isolate;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.06);
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.55),
+      inset 0 -1px 1px rgba(255,255,255,0.18),
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      0 8px 30px rgba(0,0,0,0.30);
+    padding: 26px 28px; overflow: hidden;
+  }
+  .card .content { position: relative; z-index: 3; }
+  .card h2 { margin: 0 0 8px; font-size: 20px; }
+  .card p { margin: 0; font-size: 14px; }
+
+  /* the refracted background copy lives here, behind the content */
+  .refract-layer {
+    position: absolute; inset: 0; z-index: 1; border-radius: inherit;
+    pointer-events: none; overflow: hidden;
+  }
+  .refract-layer canvas { position: absolute; top: 0; left: 0; }
+
+  /* diagonal shine on top */
+  .card::before { content: ""; position: absolute; inset: 0; z-index: 2;
+    border-radius: inherit; pointer-events: none;
+    background: linear-gradient(133deg,
+      rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.05) 22%, transparent 42%); }
+
+  /* draggable floating pill to test alignment while moving */
+  .pill {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+    z-index: 50; border-radius: 999px; padding: 16px 26px; isolation: isolate;
+    border: 1px solid rgba(255,255,255,0.24); background: rgba(255,255,255,0.05);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.55), 0 8px 30px rgba(0,0,0,0.30);
+    overflow: hidden; font-weight: 700; cursor: grab; touch-action: none;
+  }
+  .pill .content { position: relative; z-index: 3; }
+  .pill::before { content:""; position:absolute; inset:0; z-index:2; border-radius:inherit;
+    pointer-events:none; background: linear-gradient(133deg, rgba(255,255,255,0.4), transparent 42%); }
+
+  .status { position: fixed; top: 8px; left: 8px; z-index: 100; font: 11px/1.4 ui-monospace, monospace;
+    background: rgba(0,0,0,0.55); padding: 6px 9px; border-radius: 8px; max-width: 70vw; }
+  .btn { all: unset; cursor: pointer; background: rgba(255,255,255,0.16); padding: 9px 14px;
+    border-radius: 12px; font-weight: 600; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="status" id="status">booting…</div>
+
+  <div class="page" id="page">
+    <h1>Mobile refraction test</h1>
+    <p>This page snapshots its own background, then bends a copy of it inside
+       the glass cards using an SVG <span class="mono">feDisplacementMap</span>
+       applied through <span class="mono">filter:</span> — which renders on iOS,
+       unlike <span class="mono">backdrop-filter</span>. Scroll and drag the pill
+       to judge how well it tracks. <button class="btn" id="resnap">Re-snapshot</button></p>
+
+    <div class="stripes"></div>
+
+    <div class="card" data-glass>
+      <div class="refract-layer"></div>
+      <div class="content">
+        <h2>Watch the rim</h2>
+        <p>The horizontal lines behind this card should bend at the rounded
+           edges, with a faint color fringe — the liquid-glass tell.</p>
+      </div>
+    </div>
+
+    <div class="stripes stripes--diag"></div>
+
+    <p class="mono">liquid glass refraction backdrop displacement normal distance field chromatic
+      aberration prism lens edge rim bend light frost tint adaptive depth shadow inset border
+      gradient saturate specular highlight translucent pane lens bend light edge rim shine frost
+      tint adaptive depth liquid glass refraction backdrop displacement normal distance field.</p>
+
+    <div class="card" data-glass>
+      <div class="refract-layer"></div>
+      <div class="content">
+        <h2>Over fine text</h2>
+        <p>The hardest case — small text behind glass. Edge refraction should
+           warp the lines under the rim while the centre stays readable.</p>
+      </div>
+    </div>
+
+    <div class="stripes"></div>
+  </div>
+
+  <div class="pill" data-glass id="pill">
+    <div class="refract-layer"></div>
+    <div class="content">🔍 Drag me</div>
+  </div>
+
+  <!-- html2canvas-pro: clones the DOM into a canvas we can sample as the backdrop -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
+  <svg id="lg-filters" style="position:absolute;width:0;height:0" aria-hidden="true"></svg>
+  <script>
+  /* ---- SDF displacement map (same maths as the desktop engine) ---- */
+  function sdRoundRect(px, py, w, h, r) {
+    const dx = Math.abs(px - w / 2) - (w / 2) + r;
+    const dy = Math.abs(py - h / 2) - (h / 2) + r;
+    return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - r;
+  }
+  function makeDisplacementMap(w, h, radius, band, lens) {
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const ctx = cv.getContext("2d");
+    const img = ctx.createImageData(w, h); const d = img.data; const e = 1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const edgeDist = -sdRoundRect(x, y, w, h, radius);
+      let vx = 0, vy = 0;
+      if (edgeDist >= 0) {
+        let nx = sdRoundRect(x + e, y, w, h, radius) - sdRoundRect(x - e, y, w, h, radius);
+        let ny = sdRoundRect(x, y + e, w, h, radius) - sdRoundRect(x, y - e, w, h, radius);
+        const len = Math.hypot(nx, ny) || 1; nx /= len; ny /= len;
+        const t = Math.min(edgeDist / band, 1);
+        const mag = Math.pow(1 - t, 2.2);
+        vx = -lens * nx * mag; vy = -lens * ny * mag;
+      }
+      d[i] = 128 + vx * 127; d[i + 1] = 128 + vy * 127; d[i + 2] = 128; d[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0); return cv.toDataURL();
+  }
+
+  const CONFIG = { scale: 30, band: 0.9, blur: 0.4, sat: 1.4, aberration: 0.18, lens: 1 };
+  const svgRoot = document.getElementById("lg-filters");
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const status = (t) => document.getElementById("status").textContent = t;
+
+  let uid = 0;
+  function ensureFilter(w, h, radius) {
+    const band = Math.max(radius * CONFIG.band, 16);
+    const map = makeDisplacementMap(w, h, radius, band, CONFIG.lens);
+    const sR = CONFIG.scale * (1 - CONFIG.aberration), sG = CONFIG.scale, sB = CONFIG.scale * (1 + CONFIG.aberration);
+    const id = "lgf-" + (uid++);
+    const f = document.createElementNS(SVG_NS, "filter");
+    f.setAttribute("id", id);
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    f.setAttribute("primitiveUnits", "userSpaceOnUse");
+    f.setAttribute("x", "0"); f.setAttribute("y", "0");
+    f.setAttribute("width", w); f.setAttribute("height", h);
+    f.innerHTML =
+      `<feImage href="${map}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sR}" xChannelSelector="R" yChannelSelector="G" result="dR"/>` +
+      `<feColorMatrix in="dR" result="cR" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sG}" xChannelSelector="R" yChannelSelector="G" result="dG"/>` +
+      `<feColorMatrix in="dG" result="cG" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sB}" xChannelSelector="R" yChannelSelector="G" result="dB"/>` +
+      `<feColorMatrix in="dB" result="cB" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/>` +
+      `<feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>` +
+      `<feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rgb"/>` +
+      `<feColorMatrix in="rgb" type="saturate" values="${CONFIG.sat}"/>`;
+    svgRoot.appendChild(f);
+    return id;
+  }
+
+  /* The page snapshot (our "paint layer"). Re-taken on demand. */
+  let snapshot = null;       // canvas of the whole page at DPR
+  let snapW = 0, snapH = 0;
+
+  async function takeSnapshot() {
+    status("snapshotting…");
+    // hide the glass layers so the snapshot is pure background (no recursion)
+    const cards = [...document.querySelectorAll("[data-glass]")];
+    cards.forEach(c => c.style.visibility = "hidden");
+    try {
+      const canvas = await html2canvas(document.documentElement, {
+        backgroundColor: null,
+        scale: DPR,
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
+        useCORS: true,
+        logging: false,
+      });
+      snapshot = canvas; snapW = canvas.width; snapH = canvas.height;
+      status("snapshot ok " + snapW + "×" + snapH + " (dpr " + DPR + ")");
+    } catch (e) {
+      status("snapshot FAILED: " + e.message);
+    }
+    cards.forEach(c => c.style.visibility = "");
+  }
+
+  /* For each glass element, draw the slice of the page sitting behind it into a
+     canvas inside its .refract-layer, then apply the displacement filter. */
+  function paint() {
+    if (!snapshot) return;
+    const scrollY = window.scrollY, scrollX = window.scrollX;
+    document.querySelectorAll("[data-glass]").forEach(el => {
+      const layer = el.querySelector(".refract-layer");
+      if (!layer) return;
+      const r = el.getBoundingClientRect();
+      const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+      let radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 20;
+      radius = Math.min(radius, w / 2, h / 2);
+
+      let cv = layer._cv;
+      if (!cv) { cv = layer._cv = document.createElement("canvas"); layer.appendChild(cv); }
+      cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+      cv.style.width = w + "px"; cv.style.height = h + "px";
+      const ctx = cv.getContext("2d");
+      // source rect in the page snapshot = element's page position * DPR
+      const sx = (r.left + scrollX) * DPR, sy = (r.top + scrollY) * DPR;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(snapshot, sx, sy, w * DPR, h * DPR, 0, 0, w * DPR, h * DPR);
+
+      // (re)build a filter sized to this element and apply it to the canvas
+      if (!layer._fid || layer._fw !== w || layer._fh !== h) {
+        layer._fid = ensureFilter(w, h, radius);
+        layer._fw = w; layer._fh = h;
+      }
+      cv.style.filter = `url(#${layer._fid})`;
+      if (CONFIG.blur) cv.style.filter += ` blur(${CONFIG.blur}px)`;
+    });
+  }
+
+  /* paint on scroll/resize via rAF */
+  let raf = 0;
+  function schedule() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; paint(); }); }
+  window.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", () => { takeSnapshot().then(paint); });
+
+  document.getElementById("resnap").addEventListener("click", () => takeSnapshot().then(paint));
+
+  /* draggable pill */
+  const pill = document.getElementById("pill");
+  let drag = false, ox = 0, oy = 0;
+  const pt = e => e.touches ? e.touches[0] : e;
+  function down(e){ drag = true; const r = pill.getBoundingClientRect(); ox = pt(e).clientX - r.left; oy = pt(e).clientY - r.top; pill.style.transform = "none"; }
+  function move(e){ if(!drag) return; pill.style.left = (pt(e).clientX - ox) + "px"; pill.style.top = (pt(e).clientY - oy) + "px"; pill.style.bottom = "auto"; schedule(); if (e.cancelable) e.preventDefault(); }
+  function up(){ drag = false; }
+  pill.addEventListener("mousedown", down); pill.addEventListener("touchstart", down, {passive:true});
+  addEventListener("mousemove", move); addEventListener("touchmove", move, {passive:false});
+  addEventListener("mouseup", up); addEventListener("touchend", up);
+
+  /* boot */
+  window.addEventListener("load", async () => {
+    status("loaded, fonts settling…");
+    await new Promise(r => setTimeout(r, 350));
+    await takeSnapshot();
+    paint();
+  });
+  </script>
+</body>
+</html>
