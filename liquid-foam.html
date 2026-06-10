@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Foam — WebGL field · Liquid Glass</title>
+<meta name="description" content="A dependency-free, buildless WebGL2 field of liquid-glass bubbles: a tinted glass sheet of drifting, merging metaballs that refracts a living backdrop, with a clear pocket the cursor carries through the foam." />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    color: #fff; -webkit-font-smoothing: antialiased;
+    background: #0b0b16; overflow-x: hidden;
+  }
+  a { color: #9ad0ff; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  /* full-bleed foam canvas behind the content */
+  #foam { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; display: block; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 36px 24px 80px; }
+  header.top { text-align: center; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; opacity: 0.85;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+  h1 { font-size: clamp(34px, 7vw, 60px); font-weight: 800; letter-spacing: -0.03em; margin: 10px 0 8px;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.45); }
+  .tagline { font-size: 17px; opacity: 0.95; max-width: 640px; margin: 0 auto; line-height: 1.5;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.5); }
+  .back { display: inline-block; margin-top: 14px; font-weight: 600; text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+
+  /* glass control panel */
+  .panel {
+    max-width: 560px; margin: 34px auto 0; padding: 22px 24px; border-radius: 20px;
+    background: rgba(12,12,22,0.42); border: 1px solid rgba(255,255,255,0.18);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .preset { all: unset; cursor: pointer; font-size: 13px; font-weight: 600; padding: 7px 14px;
+    border-radius: 999px; background: rgba(255,255,255,0.12); transition: background 0.15s; }
+  .preset:hover { background: rgba(255,255,255,0.22); }
+  .preset.active { background: rgba(255,255,255,0.30); }
+  .row { display: grid; grid-template-columns: 116px 1fr 46px; align-items: center; gap: 12px; margin: 12px 0; }
+  .row label { font-size: 13px; opacity: 0.85; }
+  .row output { font-size: 12px; opacity: 0.7; text-align: right; font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 100%; }
+  .tintrow { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .tintrow label { font-size: 13px; opacity: 0.85; }
+  input[type="color"] { width: 44px; height: 30px; border: none; background: none; cursor: pointer; }
+
+  .unsupported { display: none; text-align: center; margin: 24px auto 0; max-width: 560px;
+    font-size: 14px; line-height: 1.6; opacity: 0.9; }
+  .unsupported.show { display: block; }
+  .snippet { max-width: 720px; margin: 30px auto 0; background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 18px 20px;
+    font-size: 13px; line-height: 1.6; overflow-x: auto; }
+  .snippet pre { margin: 0; }
+  .foot { text-align: center; margin-top: 34px; font-size: 14px; opacity: 0.9;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+</style>
+</head>
+<body>
+  <canvas id="foam"></canvas>
+
+  <div class="wrap">
+    <header class="top">
+      <span class="eyebrow">Buildless · Zero-dependency · WebGL2</span>
+      <h1>Liquid Foam</h1>
+      <p class="tagline">A whole surface of glass: drifting, merging bubbles that
+        refract a living backdrop and tint it. Move your cursor — it carries a
+        clear pocket through the foam.</p>
+      <a class="back" href="./index.html">← Back to the Liquid Glass collection</a>
+    </header>
+
+    <div class="panel" id="panel">
+      <div class="presets" id="presets"></div>
+      <div class="row">
+        <label for="coverage">Coverage</label>
+        <input type="range" id="coverage" min="0.05" max="0.35" step="0.005" />
+        <output id="coverage-v"></output>
+      </div>
+      <div class="row">
+        <label for="bubbleScale">Bubble size</label>
+        <input type="range" id="bubbleScale" min="0.5" max="2" step="0.01" />
+        <output id="bubbleScale-v"></output>
+      </div>
+      <div class="row">
+        <label for="pocketScale">Cursor pocket</label>
+        <input type="range" id="pocketScale" min="0.03" max="0.16" step="0.005" />
+        <output id="pocketScale-v"></output>
+      </div>
+      <div class="row">
+        <label for="driftScale">Drift</label>
+        <input type="range" id="driftScale" min="0" max="3" step="0.05" />
+        <output id="driftScale-v"></output>
+      </div>
+      <div class="row">
+        <label for="tintAmount">Tint amount</label>
+        <input type="range" id="tintAmount" min="0" max="1" step="0.01" />
+        <output id="tintAmount-v"></output>
+      </div>
+      <div class="tintrow">
+        <label for="tint">Tint colour</label>
+        <input type="color" id="tint" />
+      </div>
+    </div>
+
+    <p class="unsupported" id="unsupported">
+      Your browser doesn’t support WebGL2, so the foam can’t render.
+    </p>
+
+    <div class="snippet">
+<pre><code>import { createLiquidFoam, PRESETS } from "./src/liquid-foam.js";
+
+const foam = createLiquidFoam({ canvas, config: PRESETS.Mercury });
+foam.update({ coverage: 0.22 });   // live-tune any knob</code></pre>
+    </div>
+
+    <p class="foot">
+      Part of the <a href="./index.html">Liquid Glass</a> collection ·
+      <a href="https://github.com/jbbixler/liquid-foam">source on GitHub</a> ·
+      made by <a href="https://jbradbixler.com">JBB</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { createLiquidFoam, PRESETS, tintToHex, hexToTint } from "./src/liquid-foam.js";
+
+    const canvas = document.getElementById("foam");
+    const foam = createLiquidFoam({
+      canvas,
+      config: PRESETS["Electric Blue"],
+      onUnsupported: () => document.getElementById("unsupported").classList.add("show"),
+    });
+
+    const NUM = ["coverage", "bubbleScale", "pocketScale", "driftScale", "tintAmount"];
+    function syncControls(cfg) {
+      for (const k of NUM) {
+        const el = document.getElementById(k);
+        el.value = cfg[k];
+        document.getElementById(k + "-v").textContent = Number(cfg[k]).toFixed(2);
+      }
+      document.getElementById("tint").value = tintToHex(cfg.tint);
+    }
+
+    NUM.forEach((k) => {
+      const el = document.getElementById(k);
+      el.addEventListener("input", () => {
+        const v = parseFloat(el.value);
+        foam.update({ [k]: v });
+        document.getElementById(k + "-v").textContent = v.toFixed(2);
+        clearActivePreset();
+      });
+    });
+    document.getElementById("tint").addEventListener("input", (e) => {
+      foam.update({ tint: hexToTint(e.target.value) });
+      clearActivePreset();
+    });
+
+    const presetsEl = document.getElementById("presets");
+    function clearActivePreset() {
+      [...presetsEl.children].forEach((b) => b.classList.remove("active"));
+    }
+    Object.keys(PRESETS).forEach((name, i) => {
+      const b = document.createElement("button");
+      b.className = "preset" + (i === 0 ? " active" : "");
+      b.textContent = name;
+      b.addEventListener("click", () => {
+        const cfg = { ...PRESETS[name] };
+        foam.update(cfg);
+        syncControls(cfg);
+        clearActivePreset();
+        b.classList.add("active");
+      });
+      presetsEl.appendChild(b);
+    });
+
+    syncControls(PRESETS["Electric Blue"]);
+  </script>
+</body>
+</html>

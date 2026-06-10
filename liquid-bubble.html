@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Bubble — WebGL droplet · Liquid Glass</title>
+<meta name="description" content="A dependency-free, buildless WebGL2 liquid-glass droplet: a metaball lens that magnifies and refracts a grid of images, with chromatic aberration, a Fresnel rim and a moving specular hotspot. Free-drifts and springs to the cursor." />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    color: #fff; -webkit-font-smoothing: antialiased;
+    background: #0b0b16;
+    overflow-x: hidden;
+  }
+  a { color: #9ad0ff; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .backdrop {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(circle at 15% 20%, #ff6b9d 0, transparent 38%),
+      radial-gradient(circle at 85% 25%, #4facfe 0, transparent 42%),
+      radial-gradient(circle at 25% 85%, #43e97b 0, transparent 42%),
+      radial-gradient(circle at 80% 80%, #fee140 0, transparent 40%), #14142a;
+    background-size: 160% 160%;
+    animation: drift 26s ease-in-out infinite alternate;
+    filter: saturate(1.1);
+  }
+  @keyframes drift { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  header.top { text-align: center; margin-bottom: 8px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; opacity: 0.7; }
+  h1 { font-size: clamp(34px, 7vw, 60px); font-weight: 800; letter-spacing: -0.03em; margin: 10px 0 8px; }
+  .tagline { font-size: 17px; opacity: 0.86; max-width: 640px; margin: 0 auto; line-height: 1.5; }
+  .back { display: inline-block; margin-top: 14px; font-weight: 600; text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+
+  /* the live stage */
+  .stage {
+    position: relative; max-width: 960px; margin: 30px auto 0;
+    aspect-ratio: 3 / 2; border-radius: 22px; overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+  }
+  .grid {
+    position: absolute; inset: 0; display: grid;
+    grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+  }
+  .cell { background-size: cover; background-position: center; }
+  /* the bubble canvas fills the stage on top of the grid */
+  .stage canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+  .hint { text-align: center; opacity: 0.6; font-size: 13px; margin: 16px 0 0; letter-spacing: 0.04em; }
+  .unsupported {
+    display: none; text-align: center; margin: 16px auto 0; max-width: 560px;
+    font-size: 14px; line-height: 1.6; opacity: 0.85;
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 14px; padding: 16px 20px;
+    background: rgba(0,0,0,0.28);
+  }
+  .unsupported.show { display: block; }
+
+  .snippet {
+    max-width: 720px; margin: 40px auto 0; background: rgba(0,0,0,0.34);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+    padding: 18px 20px; font-size: 13px; line-height: 1.65; overflow-x: auto;
+  }
+  .snippet pre { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .foot { text-align: center; margin-top: 40px; font-size: 14px; opacity: 0.8; }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <div class="wrap">
+    <header class="top">
+      <span class="eyebrow">Buildless · Zero-dependency · WebGL2</span>
+      <h1>Liquid Bubble</h1>
+      <p class="tagline">A discrete 3D glass droplet that magnifies and refracts
+        the grid beneath it — chromatic aberration at the rim, a Fresnel edge
+        glow, a moving specular hotspot. It free-drifts and springs to your cursor.</p>
+      <a class="back" href="./index.html">← Back to the Liquid Glass collection</a>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="grid" id="grid"></div>
+      <canvas id="bubble"></canvas>
+    </div>
+    <p class="hint">Move your cursor over the grid — the droplet follows.</p>
+    <p class="unsupported" id="unsupported">
+      Your browser doesn’t support WebGL2, so the droplet can’t render. The image
+      grid is shown without it.
+    </p>
+
+    <div class="snippet">
+<pre><code>import { createLiquidBubble } from "./src/liquid-bubble.js";
+
+createLiquidBubble({
+  canvas,              // a &lt;canvas&gt; that fills the container
+  container,           // a positioned box; the pointer is tracked over it
+  cells,               // one DOM node per image, in imageUrls order
+  imageUrls,           // CORS-clean URLs (same-origin or data:)
+  onUnsupported: () =&gt; showFallback(),
+});</code></pre>
+    </div>
+
+    <p class="foot">
+      Part of the <a href="./index.html">Liquid Glass</a> collection ·
+      <a href="https://github.com/jbbixler/liquid-bubble">source on GitHub</a> ·
+      made by <a href="https://jbradbixler.com">JBB</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { createLiquidBubble } from "./src/liquid-bubble.js";
+
+    // CORS-safe gradient tiles as data URLs so the WebGL scene texture never
+    // taints the canvas (no network or Access-Control needed).
+    function gradientTile(a, b, label) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/>
+        </linearGradient></defs>
+        <rect width="600" height="600" fill="url(#g)"/>
+        <circle cx="300" cy="250" r="150" fill="rgba(255,255,255,0.16)"/>
+        <text x="300" y="540" font-family="system-ui" font-size="56" font-weight="700"
+          fill="rgba(255,255,255,0.9)" text-anchor="middle">${label}</text>
+      </svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+
+    const imageUrls = [
+      gradientTile("#ff6b9d", "#4facfe", "01"),
+      gradientTile("#43e97b", "#38f9d7", "02"),
+      gradientTile("#fa709a", "#fee140", "03"),
+      gradientTile("#30cfd0", "#330867", "04"),
+      gradientTile("#a18cd1", "#fbc2eb", "05"),
+      gradientTile("#f093fb", "#f5576c", "06"),
+    ];
+
+    const grid = document.getElementById("grid");
+    const cells = imageUrls.map((url) => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.style.backgroundImage = `url("${url}")`;
+      grid.appendChild(cell);
+      return cell;
+    });
+
+    createLiquidBubble({
+      canvas: document.getElementById("bubble"),
+      container: document.getElementById("stage"),
+      cells,
+      imageUrls,
+      onUnsupported: () => document.getElementById("unsupported").classList.add("show"),
+    });
+  </script>
+</body>
+</html>

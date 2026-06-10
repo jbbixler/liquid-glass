@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liquid Glass — drop-in Apple-style glass for the web</title>
+<meta name="description" content="A dependency-free, buildless engine for Apple-style liquid-glass surfaces: edge refraction, chromatic aberration, frost, and a specular rim — in one import." />
+<link rel="stylesheet" href="./src/liquid-glass.css" />
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    color: #fff; -webkit-font-smoothing: antialiased;
+    background: #0b0b16;
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  /* a slow, living mesh backdrop fixed behind everything */
+  .backdrop {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(circle at 15% 20%, #ff6b9d 0, transparent 38%),
+      radial-gradient(circle at 85% 25%, #4facfe 0, transparent 42%),
+      radial-gradient(circle at 25% 85%, #43e97b 0, transparent 42%),
+      radial-gradient(circle at 80% 80%, #fee140 0, transparent 40%), #14142a;
+    background-size: 160% 160%;
+    animation: drift 26s ease-in-out infinite alternate;
+    filter: saturate(1.1);
+  }
+  @keyframes drift {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+  .grain { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.5;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 4px); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------------- HERO ---------------- */
+  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    align-items: center; text-align: center; gap: 26px; padding: 80px 24px; position: relative; }
+  .eyebrow { font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700;
+    opacity: 0.7; }
+  .hero h1 { font-size: clamp(52px, 12vw, 132px); font-weight: 800; letter-spacing: -0.04em;
+    margin: 0; line-height: 0.92; text-shadow: 0 6px 40px rgba(0,0,0,0.35); }
+  .hero .tagline { font-size: clamp(17px, 2.4vw, 22px); opacity: 0.92; max-width: 620px;
+    margin: 0; line-height: 1.5; }
+  .hero-card { padding: 30px 40px; margin-top: 8px; max-width: 560px; }
+  .hero-card p { margin: 0; font-size: 16px; line-height: 1.6; opacity: 0.95; }
+  .cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .btn { padding: 14px 26px; font-weight: 600; font-size: 16px; border-radius: 16px; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { background: rgba(255,255,255,0.16); }
+  .btn--solid { background: rgba(255,255,255,0.16); }
+  .btn svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none;
+    stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .scroll-hint { position: absolute; bottom: 28px; font-size: 13px; opacity: 0.6; letter-spacing: 0.1em;
+    animation: bob 2s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+  /* ---------------- SECTION SHELL ---------------- */
+  section { padding: 100px 0; }
+  .sec-head { text-align: center; margin-bottom: 14px; }
+  .sec-head h2 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .sec-head p { font-size: 17px; opacity: 0.82; max-width: 620px; margin: 0 auto; line-height: 1.55; }
+
+  /* ---------------- HOW IT WORKS (5 layers) ---------------- */
+  .layers { display: flex; flex-direction: column; gap: 26px; margin-top: 50px; }
+  .layer { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center;
+    padding: 30px; }
+  .layer:nth-child(even) .layer-demo { order: 2; }
+  .layer-num { font-size: 13px; font-weight: 700; letter-spacing: 0.15em; opacity: 0.6;
+    text-transform: uppercase; margin-bottom: 8px; }
+  .layer h3 { font-size: 24px; margin: 0 0 10px; }
+  .layer p { font-size: 15px; line-height: 1.6; opacity: 0.9; margin: 0 0 14px; }
+  .layer pre { margin: 0; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 14px 16px; font-size: 12.5px; line-height: 1.55; overflow-x: auto; }
+  .layer-demo { display: grid; place-items: center; min-height: 180px; }
+
+  /* per-layer demo swatches over a busy strip so each effect is visible */
+  .swatch { width: 220px; height: 150px; border-radius: 22px; display: grid; place-items: center;
+    font-weight: 700; font-size: 16px; text-align: center; position: relative; }
+  .demo-bg { position: relative; border-radius: 24px; padding: 26px; overflow: hidden;
+    background:
+      repeating-linear-gradient(0deg, #fff 0 5px, #11111d 5px 18px); }
+  .demo-bg--mesh { background:
+      radial-gradient(circle at 20% 30%, #ff6b9d 0, transparent 45%),
+      radial-gradient(circle at 80% 70%, #4facfe 0, transparent 48%), #1a1a2e; }
+  .demo-bg--stripes { background: repeating-linear-gradient(45deg,
+      #ff0066 0 30px, #00d4ff 30px 60px, #ffd000 60px 90px, #00ff88 90px 120px); }
+
+  /* tint-only swatch (no JS filter) to show layer 1 in isolation */
+  .tint-only { -webkit-backdrop-filter: none; }
+  .tint-only.glass::before, .tint-only.glass::after { display: none; }
+
+  /* ---------------- QUICKSTART ---------------- */
+  .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 44px; }
+  .codecard { padding: 26px 28px; }
+  .codecard h3 { margin: 0 0 14px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .codecard pre { margin: 0; background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.6; overflow-x: auto; position: relative; }
+  .copybtn { position: absolute; top: 10px; right: 10px; all: unset; cursor: pointer;
+    font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.14); }
+  .copybtn:hover { background: rgba(255,255,255,0.26); }
+  .kbd { color: #9ad0ff; }
+  .opt { color: #ffd479; }
+  .str { color: #9ce5a0; }
+  .com { color: rgba(255,255,255,0.45); }
+
+  /* options table */
+  .opts { margin-top: 50px; padding: 26px 30px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  th { font-weight: 700; opacity: 0.7; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  td code { color: #9ad0ff; font-weight: 600; }
+  td:last-child { opacity: 0.86; }
+
+  /* ---------------- PRESETS GALLERY ---------------- */
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px; margin-top: 44px; }
+  .pcard { padding: 22px 24px; cursor: pointer; transition: transform 0.18s ease; }
+  .pcard:hover { transform: translateY(-4px); }
+  .pcard h3 { margin: 0 0 12px; font-size: 18px; }
+  .pcard pre { margin: 0; font-size: 11.5px; line-height: 1.5; opacity: 0.85; white-space: pre-wrap; }
+  .pcard .applied { font-size: 12px; font-weight: 600; color: #9ce5a0; opacity: 0; transition: opacity 0.2s; }
+  .pcard.is-applied .applied { opacity: 1; }
+
+  /* ---------------- FOOTER ---------------- */
+  footer { padding: 70px 0 90px; text-align: center; }
+  .footcard { display: inline-flex; flex-direction: column; gap: 16px; padding: 30px 44px; }
+  .footlinks { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; font-weight: 600; }
+  .footlinks a { text-decoration: none; opacity: 0.9; }
+  .footlinks a:hover { opacity: 1; text-decoration: underline; }
+  .credit { font-size: 14px; font-weight: 600; opacity: 0.85; }
+  .credit a { color: #9ad0ff; text-decoration: none; }
+  .credit a:hover { text-decoration: underline; }
+  footer small { opacity: 0.6; }
+
+  @media (max-width: 760px) {
+    .layer { grid-template-columns: 1fr; }
+    .layer:nth-child(even) .layer-demo { order: 0; }
+    .quick { grid-template-columns: 1fr; }
+  }
+
+  /* ---------------- MOBILE GATE ----------------
+     The refraction effect depends on backdrop-filter: url(#svg), which only
+     the Chromium engine renders. Every browser on iOS is WebKit, so there is
+     no way to show the real thing on a phone. Rather than ship a degraded
+     layout, mobile gets a purpose-built page: desktop screenshots + a plain
+     explanation. Desktop is completely unaffected. */
+  .mobile-gate { display: none; }
+
+  @media (max-width: 760px) {
+    .desktop-only { display: none !important; }
+    .mobile-gate {
+      display: block; position: relative; z-index: 1;
+      min-height: 100vh; padding: 40px 20px 56px;
+      max-width: 540px; margin: 0 auto;
+    }
+    .mg-eyebrow { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+      font-weight: 700; opacity: 0.7; margin: 4px 0 14px; }
+    .mg-title { font-size: clamp(40px, 16vw, 68px); font-weight: 800; letter-spacing: -0.03em;
+      line-height: 0.92; margin: 0 0 18px; text-shadow: 0 4px 30px rgba(0,0,0,0.35); }
+    .mg-lead { font-size: 17px; line-height: 1.55; opacity: 0.95; margin: 0 0 24px; }
+    .mg-card { padding: 22px 22px; margin: 0 0 22px; }
+    .mg-card h2 { font-size: 18px; margin: 0 0 10px; }
+    .mg-card p { font-size: 14.5px; line-height: 1.6; opacity: 0.92; margin: 0 0 10px; }
+    .mg-card p:last-child { margin-bottom: 0; }
+    .mg-shot { width: 100%; display: block; border-radius: 16px; margin: 0 0 14px;
+      border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 8px 30px rgba(0,0,0,0.32); }
+    .mg-cap { font-size: 12.5px; opacity: 0.62; margin: 0 0 26px; text-align: center; }
+    .mg-actions { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 28px; }
+    .mg-btn { display: block; text-align: center; text-decoration: none; color: #fff;
+      padding: 15px 20px; border-radius: 16px; font-weight: 600; font-size: 15px; }
+    .mg-foot { text-align: center; font-size: 13px; opacity: 0.7; line-height: 1.7; }
+    .mg-foot a { color: #9ad0ff; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+  <div class="grain"></div>
+
+  <!-- ============================ MOBILE GATE ============================
+       Shown only under 760px. The refraction effect cannot run on iOS, so the
+       phone gets desktop screenshots and a plain note instead of a broken UI. -->
+  <main class="mobile-gate">
+    <p class="mg-eyebrow">Best on desktop</p>
+    <h1 class="mg-title">Liquid Glass</h1>
+    <p class="mg-lead">A buildless, zero-dependency engine that gives the web
+      Apple-style refractive glass: edges that bend the background, a faint
+      color fringe, frost, and a living rim.</p>
+
+    <div class="mg-card glass glass--frost">
+      <h2>This one is a desktop thing</h2>
+      <p>The refraction is powered by an SVG filter inside
+        <code>backdrop-filter</code>, and only Chromium browsers (Chrome, Edge,
+        Brave) actually render it. Every browser on iPhone and iPad runs on
+        Apple&rsquo;s WebKit engine, which does not, so there is no way to show
+        the real effect on a phone yet.</p>
+      <p>It is not broken and it is not your browser. The web platform simply
+        cannot do this on iOS today. So instead of a half-working page, here is
+        what it looks like on a computer.</p>
+    </div>
+
+    <img class="mg-shot" src="./assets/desktop-lines.jpg" width="1000" loading="lazy"
+      alt="Liquid Glass panels refracting horizontal lines on desktop, with a visible color fringe at the edges." />
+    <p class="mg-cap">Panels bending the background at the rim, with chromatic aberration.</p>
+
+    <img class="mg-shot" src="./assets/desktop-showcase.jpg" width="1000" loading="lazy"
+      alt="Liquid Glass showcase over a photo, with a live control panel for tuning the effect." />
+    <p class="mg-cap">The interactive playground, with live controls and presets.</p>
+
+    <div class="mg-actions">
+      <a class="mg-btn glass" href="https://github.com/jbbixler/liquid-glass">View the code on GitHub</a>
+      <a class="mg-btn glass glass--clear" href="./liquid-glass-showcase.html">Open the playground anyway</a>
+    </div>
+
+    <p class="mg-foot">Open <strong>tools.jbradbixler.com/liquid-glass</strong> on a
+      desktop browser for the full thing.<br />
+      Made by <a href="https://jbradbixler.com">JBB</a> &middot; jbradbixler.com</p>
+  </main>
+
+  <!-- ============================ DESKTOP ============================ -->
+  <div class="desktop-only">
+  <!-- ============================ HERO ============================ -->
+  <header class="hero">
+    <span class="eyebrow">Buildless · Zero-dependency · ~6 KB</span>
+    <h1>Liquid&nbsp;Glass</h1>
+    <p class="tagline">Apple-style refractive glass for the web — edge bending,
+      chromatic aberration, frost and a living specular rim, in one import.</p>
+    <div class="hero-card glass glass--frost">
+      <p>Real <code>backdrop-filter</code> refraction driven by a per-element SVG
+         displacement map. No canvas overlay, no WebGL, no build step.</p>
+    </div>
+    <div class="cta">
+      <a class="btn btn--solid glass" href="./liquid-glass-showcase.html"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Open the playground</a>
+      <button class="btn glass" id="copyQuick"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg> Copy quickstart</button>
+    </div>
+    <div class="scroll-hint">scroll to see how it works ↓</div>
+  </header>
+
+  <!-- ====================== HOW IT WORKS ====================== -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>How it works — 5 layers</h2>
+        <p>The effect is just five honest CSS/SVG layers stacked in order. Here's
+           each one, peeled apart, with the exact code responsible.</p>
+      </div>
+
+      <div class="layers">
+        <!-- Layer 1 -->
+        <div class="layer glass">
+          <div>
+            <div class="layer-num">Layer 01 · Tint</div>
+            <h3>A translucent fill</h3>
+            <p>Start with a barely-there background color. It sets the mood —
+               clear, frosted, dark, or tinted — before anything bends light.</p>
+            <pre><span class="kbd">.glass</span> { <span class="com">/* --glass-tint */</span>
+  background: rgba(255,255,255,.06);
+}</pre>
+          </div>
+          <div class="layer-demo">
+            <div class="demo-bg demo-bg--mesh">
+              <div class="swatch glass glass--frost tint-only">tint only</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 2 -->
+        <div class="layer glass">
+          <div>
+            <div class="layer-num">Layer 02 · Blur &amp; saturate</div>
+            <h3>Frost the backdrop</h3>
+            <p>A <code>backdrop-filter</code> blurs and over-saturates whatever is
+               behind the pane — the classic "frosted" legibility trick, and the
+               Safari/Firefox fallback when SVG refraction isn't available.</p>
+            <pre><span class="kbd">.glass</span> {
+  backdrop-filter: <span class="opt">blur</span>(6px) <span class="opt">saturate</span>(170%);
+}</pre>
+          </div>
+          <div class="layer-demo">
+            <div class="demo-bg demo-bg--stripes">
+              <div class="swatch glass" data-layer="blur">blur + saturate</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 3 -->
+        <div class="layer glass">
+          <div>
+            <div class="layer-num">Layer 03 · Specular rim</div>
+            <h3>The wet 3D bevel</h3>
+            <p>Inset box-shadows fake a lit top edge and a shadowed bottom — the
+               "wet glass" highlight — plus an outer shadow so the pane floats.</p>
+            <pre><span class="kbd">.glass</span> {
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.55), <span class="com">/* top light */</span>
+    inset 0 -1px 1px rgba(255,255,255,.18),<span class="com">/* bottom */</span>
+    0 6px 24px rgba(0,0,0,.22);            <span class="com">/* float */</span>
+}</pre>
+          </div>
+          <div class="layer-demo">
+            <div class="demo-bg demo-bg--mesh">
+              <div class="swatch glass" data-layer="bevel">bevel + shadow</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 4 -->
+        <div class="layer glass">
+          <div>
+            <div class="layer-num">Layer 04 · Moving shine</div>
+            <h3>A travelling highlight</h3>
+            <p>A diagonal gradient pseudo-element gives a fixed sheen, and a
+               radial highlight follows the cursor — set <code>--mx/--my</code>
+               on hover for the "alive" feel.</p>
+            <pre><span class="kbd">.glass::after</span> {
+  background: radial-gradient(130px circle
+    at <span class="opt">var(--mx)</span> <span class="opt">var(--my)</span>, rgba(255,255,255,.28), transparent);
+}</pre>
+          </div>
+          <div class="layer-demo">
+            <div class="demo-bg demo-bg--stripes">
+              <div class="swatch glass" data-layer="shine">hover me →</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 5 -->
+        <div class="layer glass">
+          <div>
+            <div class="layer-num">Layer 05 · SVG refraction</div>
+            <h3>Edge bending &amp; chromatic aberration</h3>
+            <p>The signature move: a per-element SVG displacement map pushes the
+               backdrop pixels outward at the rounded rim, and the red/blue
+               channels are displaced by slightly different amounts to fringe the
+               edge — exactly like a real lens. This is what <code>createLiquidGlass</code>
+               wires up for you.</p>
+            <pre><span class="kbd">import</span> { createLiquidGlass } <span class="kbd">from</span> <span class="str">"./src/liquid-glass.js"</span>;
+createLiquidGlass(<span class="str">".glass"</span>); <span class="com">// done</span></pre>
+          </div>
+          <div class="layer-demo">
+            <div class="demo-bg">
+              <div class="swatch glass" data-layer="refract">full effect</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== QUICKSTART ====================== -->
+  <section id="quickstart">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Quickstart</h2>
+        <p>Three lines. No bundler, no install — though npm and a CDN are there
+           if you want them.</p>
+      </div>
+
+      <div class="quick">
+        <div class="codecard glass">
+          <h3>Copy-paste (local files)</h3>
+          <pre><button class="copybtn" data-copy="local">copy</button><span class="com">&lt;!-- 1. styles --&gt;</span>
+&lt;<span class="kbd">link</span> rel=<span class="str">"stylesheet"</span> href=<span class="str">"src/liquid-glass.css"</span>&gt;
+
+<span class="com">&lt;!-- 2. markup --&gt;</span>
+&lt;<span class="kbd">div</span> class=<span class="str">"glass"</span>&gt;Hello&lt;/<span class="kbd">div</span>&gt;
+
+<span class="com">&lt;!-- 3. engine --&gt;</span>
+&lt;<span class="kbd">script</span> type=<span class="str">"module"</span>&gt;
+  <span class="kbd">import</span> { createLiquidGlass } <span class="kbd">from</span> <span class="str">"./src/liquid-glass.js"</span>;
+  createLiquidGlass(<span class="str">".glass"</span>);
+&lt;/<span class="kbd">script</span>&gt;</pre>
+        </div>
+
+        <div class="codecard glass">
+          <h3>From the CDN (jsDelivr)</h3>
+          <pre><button class="copybtn" data-copy="cdn">copy</button>&lt;<span class="kbd">link</span> rel=<span class="str">"stylesheet"</span> href=
+  <span class="str">"https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.css"</span>&gt;
+
+&lt;<span class="kbd">div</span> class=<span class="str">"glass"</span>&gt;Hello&lt;/<span class="kbd">div</span>&gt;
+
+&lt;<span class="kbd">script</span> type=<span class="str">"module"</span>&gt;
+  <span class="kbd">import</span> { createLiquidGlass, PRESETS }
+    <span class="kbd">from</span> <span class="str">"https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.js"</span>;
+  <span class="kbd">const</span> g = createLiquidGlass(<span class="str">".glass"</span>);
+  g.update(PRESETS.Frosted); <span class="com">// optional preset</span>
+&lt;/<span class="kbd">script</span>&gt;</pre>
+        </div>
+      </div>
+
+      <!-- options table -->
+      <div class="opts glass">
+        <h3 style="margin:0 0 16px; font-size:18px;">Options — the six knobs</h3>
+        <table>
+          <thead><tr><th>Option</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>scale</code></td><td>34</td><td>Edge magnification / refraction strength in px — higher bends more.</td></tr>
+            <tr><td><code>band</code></td><td>0.9</td><td>Width of the refractive ring as a multiple of the corner radius. Smaller = tighter to the edge.</td></tr>
+            <tr><td><code>blur</code></td><td>2.5</td><td>Frost amount (Gaussian blur, px).</td></tr>
+            <tr><td><code>sat</code></td><td>1.8</td><td>Saturation boost of the backdrop.</td></tr>
+            <tr><td><code>aberration</code></td><td>0.17</td><td>R/B channel split as a fraction of <code>scale</code>. 0 turns off the color fringe.</td></tr>
+            <tr><td><code>lens</code></td><td>1</td><td><code>+1</code> magnifies inward (default); <code>-1</code> compresses the rim outward.</td></tr>
+          </tbody>
+        </table>
+        <p style="margin:16px 0 0; font-size:13.5px; opacity:0.8;">
+          The handle exposes <code>update(partial)</code>, <code>rebuild()</code>,
+          <code>destroy()</code> and <code>elements</code>. Pass any preset object
+          straight into <code>update()</code> — the same JSON the playground
+          exports.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== PRESETS GALLERY ====================== -->
+  <section id="presets">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Presets</h2>
+        <p>Six tuned starting points. Click a card to apply it live to every glass
+           surface on this page — then grab its JSON.</p>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </section>
+
+  <!-- ====================== FOOTER ====================== -->
+  <footer>
+    <div class="wrap">
+      <div class="footcard glass glass--frost">
+        <div class="footlinks">
+          <a href="./liquid-glass-showcase.html">Playground</a>
+          <a href="https://github.com/jbbixler/liquid-glass">GitHub</a>
+        </div>
+        <div class="credit">Made by <a href="https://jbradbixler.com" target="_blank" rel="noopener">JBB</a> · jbradbixler.com</div>
+        <small>MIT licensed · made with refraction, not WebGL</small>
+      </div>
+    </div>
+  </footer>
+  </div><!-- /.desktop-only -->
+
+  <svg id="glass-filters" style="position:absolute; width:0; height:0" aria-hidden="true"></svg>
+
+  <script type="module">
+    import { createLiquidGlass, PRESETS } from "./src/liquid-glass.js";
+
+    // ---- build the presets gallery first, so its cards are glass too ----
+    const gallery = document.getElementById("gallery");
+    const cards = [];
+    for (const [name, cfg] of Object.entries(PRESETS)) {
+      const card = document.createElement("div");
+      card.className = "pcard glass";
+      card.innerHTML = `<h3>${name}</h3>` +
+        `<pre>${JSON.stringify(cfg, null, 2)}</pre>` +
+        `<div class="applied">Applied ✓ — affecting every pane</div>`;
+      cards.push(card);
+      gallery.appendChild(card);
+    }
+
+    // Apply the engine to every glass surface (gallery cards included) except
+    // the deliberately tint-only swatch (which demonstrates Layer 1 alone).
+    const targets = [...document.querySelectorAll(".glass")].filter(el => !el.classList.contains("tint-only"));
+    const glass = createLiquidGlass(targets);
+
+    // clicking a card applies its preset live to every pane on the page
+    cards.forEach((card, i) => {
+      const cfg = Object.values(PRESETS)[i];
+      card.addEventListener("click", () => {
+        glass.update(cfg);
+        cards.forEach(c => c.classList.remove("is-applied"));
+        card.classList.add("is-applied");
+      });
+    });
+
+    // cursor-following specular highlight (Layer 4)
+    document.addEventListener("mousemove", (ev) => {
+      const g = ev.target.closest && ev.target.closest(".glass"); if (!g) return;
+      const r = g.getBoundingClientRect();
+      g.style.setProperty("--mx", (ev.clientX - r.left) + "px");
+      g.style.setProperty("--my", (ev.clientY - r.top) + "px");
+    });
+
+    // ---- copy buttons ----
+    const QUICK = `<link rel="stylesheet" href="src/liquid-glass.css">\n` +
+      `<div class="glass">Hello</div>\n` +
+      `<script type="module">\n` +
+      `  import { createLiquidGlass } from "./src/liquid-glass.js";\n` +
+      `  createLiquidGlass(".glass");\n` +
+      `<\/script>`;
+    const CDN = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.css">\n` +
+      `<div class="glass">Hello</div>\n` +
+      `<script type="module">\n` +
+      `  import { createLiquidGlass, PRESETS } from "https://cdn.jsdelivr.net/gh/jbbixler/liquid-glass/src/liquid-glass.js";\n` +
+      `  const g = createLiquidGlass(".glass");\n` +
+      `  g.update(PRESETS.Frosted);\n` +
+      `<\/script>`;
+
+    async function copy(text, btn, label = "copy") {
+      try { await navigator.clipboard.writeText(text); btn.textContent = "copied ✓"; }
+      catch { btn.textContent = "copy failed"; }
+      setTimeout(() => (btn.textContent = label), 1300);
+    }
+    const copyQuickIcon = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg> Copy quickstart';
+    document.getElementById("copyQuick").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      try { await navigator.clipboard.writeText(QUICK); btn.textContent = "copied ✓"; }
+      catch { btn.textContent = "copy failed"; }
+      setTimeout(() => { btn.innerHTML = copyQuickIcon; }, 1300);
+    });
+    document.querySelectorAll(".copybtn").forEach(btn =>
+      btn.addEventListener("click", () => copy(btn.dataset.copy === "cdn" ? CDN : QUICK, btn)));
+  </script>
+</body>
+</html>
